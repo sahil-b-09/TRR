@@ -1,16 +1,24 @@
-export type AccountCurrency = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'INR';
+export type AccountCurrency = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'INR'; // Kept for legacy compatibility if needed, though unused in UI
 export type PairType = 'Major' | 'JPY' | 'Gold' | 'Minor';
-export type GoldPipDefinition = '0.01' | '0.10' | '1.00';
 export type Leverage = '1:100' | '1:200' | '1:500' | '1:1000';
 
+export type CalculationMode = 'CalculateLots' | 'CalculateSL';
+export type RiskUnit = 'Percentage' | 'Amount';
+
 export interface CalculatorInputs {
+    mode: CalculationMode;
     accountBalance: number;
-    accountCurrency: AccountCurrency;
+    // accountCurrency removed - simplified to generic units
     currencyPair: string;
-    stopLossPips: number;
+    stopLossPips: number; // Used in CalculateLots mode
+    spreadPips: number; // New: Spread Buffer
+    lotSizeInput?: number; // Used in CalculateSL mode
+
+    riskUnit: RiskUnit;
     riskPercentage: number;
+    riskAmount: number; // Used if RiskUnit is 'Amount'
+
     leverage: Leverage;
-    goldPipDefinition?: GoldPipDefinition; // Required if pair is Gold
     targetProfitPips?: number; // Optional
 }
 
@@ -22,11 +30,7 @@ export interface CalculatorResult {
         miniLots: number;
         microLots: number;
     };
-    riskAmount: {
-        accountCurrency: number;
-        usd: number;
-        inr: number;
-    };
+    riskAmount: number; // Simplified to single value
     margin: {
         required: number;
         percent: number;
@@ -39,6 +43,7 @@ export interface CalculatorResult {
         minWinRate: number;
         quality: 'Poor' | 'Fair' | 'Good' | 'Excellent';
     };
+    recommendedSL?: number; // Result for CalculateSL mode
     drawdownScenarios: DrawdownScenario[];
     benchmarks: {
         conservative: number;

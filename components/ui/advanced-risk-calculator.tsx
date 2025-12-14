@@ -18,13 +18,15 @@ export function AdvancedRiskCalculator() {
 
     // Form State
     const [inputs, setInputs] = useState<CalculatorInputs>({
+        mode: 'CalculateLots',
         accountBalance: 5000,
-        accountCurrency: 'USD',
         currencyPair: 'EUR/USD',
         stopLossPips: 30, // Tighter default
+        lotSizeInput: 1.0,
+        riskUnit: 'Percentage',
         riskPercentage: 1,
-        leverage: '1:500', // Standard broker leverage
-        goldPipDefinition: '0.10',
+        riskAmount: 50, // Default for amount mode
+        leverage: '1:1000', // Standard broker leverage (Updated to 1:1000)
         targetProfitPips: 60
     });
 
@@ -50,7 +52,11 @@ export function AdvancedRiskCalculator() {
 
     const copyToClipboard = () => {
         if (!result) return;
-        navigator.clipboard.writeText(result.positionSize.lots.toString());
+        const textToCopy = inputs.mode === 'CalculateLots'
+            ? result.positionSize.lots.toString()
+            : result.recommendedSL?.toString() || "";
+
+        navigator.clipboard.writeText(textToCopy);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -101,16 +107,32 @@ export function AdvancedRiskCalculator() {
                             <div className="overflow-y-auto flex-1 custom-scrollbar">
                                 <div className="p-6 space-y-6">
 
+                                    {/* Mode Toggle */}
+                                    <div className="bg-[#1E2028] p-1 rounded-xl flex">
+                                        <button
+                                            onClick={() => updateInput('mode', 'CalculateLots')}
+                                            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${inputs.mode === 'CalculateLots' ? 'bg-emerald-600 text-white shadow-lg' : 'text-neutral-400 hover:text-white'}`}
+                                        >
+                                            Find Lot Size
+                                        </button>
+                                        <button
+                                            onClick={() => updateInput('mode', 'CalculateSL')}
+                                            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${inputs.mode === 'CalculateSL' ? 'bg-emerald-600 text-white shadow-lg' : 'text-neutral-400 hover:text-white'}`}
+                                        >
+                                            Find Stop Loss
+                                        </button>
+                                    </div>
+
                                     {/* PRIMARY INPUTS (The 4 things that matter) */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                                         {/* Pair */}
-                                        <div className="col-span-2">
+                                        <div className="col-span-1 sm:col-span-2">
                                             <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider ml-1">Currency Pair</label>
                                             <select
                                                 value={inputs.currencyPair}
                                                 onChange={(e) => updateInput('currencyPair', e.target.value)}
-                                                className="w-full mt-1.5 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-medium appearance-none"
+                                                className="w-full mt-1.5 bg-[#1E2028] border border-white/10 rounded-xl py-4 sm:py-3 px-4 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-medium appearance-none text-base"
                                             >
                                                 {PAIR_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
                                             </select>
@@ -123,55 +145,127 @@ export function AdvancedRiskCalculator() {
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-medium">$</span>
                                                 <input
                                                     type="number"
+                                                    inputMode="decimal"
                                                     value={inputs.accountBalance}
                                                     onChange={(e) => updateInput('accountBalance', parseFloat(e.target.value))}
-                                                    className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 pl-7 pr-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-mono text-base"
+                                                    className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-4 sm:py-3 pl-7 pr-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-mono text-base"
                                                 />
                                             </div>
                                         </div>
 
-                                        {/* Stop Loss */}
+                                        {/* Dynamic Input: Stop Loss OR Lot Size */}
                                         <div className="col-span-1">
-                                            <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider ml-1">Stop Loss (Pips)</label>
-                                            <input
-                                                type="number"
-                                                value={inputs.stopLossPips}
-                                                onChange={(e) => updateInput('stopLossPips', parseFloat(e.target.value))}
-                                                className="w-full mt-1.5 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-mono text-base"
-                                            />
-                                        </div>
-
-                                        {/* Risk % */}
-                                        <div className="col-span-2">
-                                            <div className="flex justify-between items-center mb-1.5">
-                                                <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider ml-1">Risk per Trade</label>
-                                                <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                                                    Risking ${(inputs.accountBalance * (inputs.riskPercentage / 100)).toFixed(0)}
-                                                </span>
-                                            </div>
-
-                                            <div className="flex gap-2">
-                                                {RISK_OPTIONS.map(r => (
-                                                    <button
-                                                        key={r}
-                                                        onClick={() => updateInput('riskPercentage', r)}
-                                                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${inputs.riskPercentage === r
-                                                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                                                            : 'bg-[#1E2028] text-neutral-400 hover:bg-[#252830] hover:text-white'}`}
-                                                    >
-                                                        {r}%
-                                                    </button>
-                                                ))}
-                                                <div className="w-[80px] relative">
+                                            <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider ml-1">
+                                                {inputs.mode === 'CalculateLots' ? "Stop Loss (Pips)" : "Lot Size"}
+                                            </label>
+                                            {inputs.mode === 'CalculateLots' ? (
+                                                <div className="flex gap-2 mt-1.5">
                                                     <input
                                                         type="number"
-                                                        value={inputs.riskPercentage}
-                                                        onChange={(e) => updateInput('riskPercentage', parseFloat(e.target.value))}
-                                                        className="w-full h-full bg-[#1E2028] border border-white/10 rounded-lg text-center text-white focus:border-emerald-500 outline-none font-mono text-sm"
+                                                        inputMode="decimal"
+                                                        value={inputs.stopLossPips}
+                                                        onChange={(e) => updateInput('stopLossPips', parseFloat(e.target.value))}
+                                                        className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-4 sm:py-3 px-3 text-white focus:border-emerald-500 outline-none font-mono text-base placeholder-neutral-700"
+                                                        placeholder="SL"
                                                     />
-                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">%</span>
+                                                    {/* Spread Input (Mini) */}
+                                                    <div className="w-[35%] relative group">
+                                                        <input
+                                                            type="number"
+                                                            inputMode="decimal"
+                                                            value={inputs.spreadPips || ''}
+                                                            onChange={(e) => updateInput('spreadPips', parseFloat(e.target.value))}
+                                                            className="w-full h-full bg-[#1E2028] border border-white/10 rounded-xl px-2 text-center text-xs text-neutral-400 focus:text-white focus:border-emerald-500 outline-none"
+                                                            placeholder="+Spread"
+                                                        />
+                                                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                                            Spread (Pips)
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <input
+                                                    type="number"
+                                                    inputMode="decimal"
+                                                    value={inputs.lotSizeInput}
+                                                    onChange={(e) => updateInput('lotSizeInput', parseFloat(e.target.value))}
+                                                    placeholder="1.0"
+                                                    className="w-full mt-1.5 bg-[#1E2028] border border-white/10 rounded-xl py-4 sm:py-3 px-4 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-mono text-base"
+                                                />
+                                            )}
+                                        </div>
+
+                                        {/* Risk Section */}
+                                        <div className="col-span-1 sm:col-span-2">
+                                            <div className="flex justify-between items-center mb-1.5">
+                                                <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider ml-1">Risk per Trade</label>
+                                                {/* Risk Unit Toggle */}
+                                                <div className="flex bg-[#1E2028] rounded-lg p-0.5 border border-white/5">
+                                                    <button
+                                                        onClick={() => updateInput('riskUnit', 'Percentage')}
+                                                        className={`text-[10px] px-3 py-1 sm:px-2 sm:py-0.5 rounded transition-all ${inputs.riskUnit === 'Percentage' ? 'bg-emerald-500 text-white' : 'text-neutral-500 hover:text-white'}`}
+                                                    >
+                                                        %
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateInput('riskUnit', 'Amount')}
+                                                        className={`text-[10px] px-3 py-1 sm:px-2 sm:py-0.5 rounded transition-all ${inputs.riskUnit === 'Amount' ? 'bg-emerald-500 text-white' : 'text-neutral-500 hover:text-white'}`}
+                                                    >
+                                                        $
+                                                    </button>
                                                 </div>
                                             </div>
+
+                                            {inputs.riskUnit === 'Percentage' ? (
+                                                <div className="flex gap-2">
+                                                    {RISK_OPTIONS.map(r => (
+                                                        <button
+                                                            key={r}
+                                                            onClick={() => updateInput('riskPercentage', r)}
+                                                            className={`flex-1 py-3 sm:py-2 rounded-lg text-sm font-medium transition-all ${inputs.riskPercentage === r
+                                                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                                                                : 'bg-[#1E2028] text-neutral-400 hover:bg-[#252830] hover:text-white'}`}
+                                                        >
+                                                            {r}%
+                                                        </button>
+                                                    ))}
+                                                    <div className="w-[80px] relative">
+                                                        <input
+                                                            type="number"
+                                                            inputMode="decimal"
+                                                            value={inputs.riskPercentage}
+                                                            onChange={(e) => updateInput('riskPercentage', parseFloat(e.target.value))}
+                                                            className="w-full h-full bg-[#1E2028] border border-white/10 rounded-lg text-center text-white focus:border-emerald-500 outline-none font-mono text-sm"
+                                                        />
+                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">%</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    {/* Quick Chips for Amount */}
+                                                    {[10, 20, 50, 100].map(amt => (
+                                                        <button
+                                                            key={amt}
+                                                            onClick={() => updateInput('riskAmount', amt)}
+                                                            className={`flex-1 py-3 sm:py-2 rounded-lg text-xs font-medium transition-all ${inputs.riskAmount === amt
+                                                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                                                                : 'bg-[#1E2028] text-neutral-400 hover:bg-[#252830] hover:text-white'}`}
+                                                        >
+                                                            ${amt}
+                                                        </button>
+                                                    ))}
+                                                    <div className="w-[80px] relative">
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500 font-medium text-xs">$</span>
+                                                        <input
+                                                            type="number"
+                                                            inputMode="decimal"
+                                                            value={inputs.riskAmount}
+                                                            onChange={(e) => updateInput('riskAmount', parseFloat(e.target.value))}
+                                                            className="w-full h-full bg-[#1E2028] border border-white/10 rounded-lg text-center text-white focus:border-emerald-500 outline-none font-mono text-sm pl-3"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                     </div>
@@ -183,7 +277,7 @@ export function AdvancedRiskCalculator() {
                                             className="flex items-center gap-2 text-xs font-medium text-neutral-500 hover:text-white transition-colors"
                                         >
                                             <Settings className="w-3.5 h-3.5" />
-                                            {showAdvanced ? "Hide Advanced Settings" : "Show Advanced Settings (Leverage, JPY, Gold)"}
+                                            {showAdvanced ? "Hide Advanced Settings" : "Show Advanced Settings (Leverage)"}
                                             {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                         </button>
 
@@ -196,17 +290,7 @@ export function AdvancedRiskCalculator() {
                                                     className="overflow-hidden"
                                                 >
                                                     <div className="pt-4 grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <label className="text-xs text-neutral-400 ml-1">Account Currency</label>
-                                                            <select
-                                                                value={inputs.accountCurrency}
-                                                                onChange={(e) => updateInput('accountCurrency', e.target.value)}
-                                                                className="w-full mt-1 bg-[#1E2028] border border-white/10 rounded-lg py-2 px-3 text-sm text-white outline-none"
-                                                            >
-                                                                {['USD', 'EUR', 'GBP', 'JPY', 'INR'].map(c => <option key={c} value={c}>{c}</option>)}
-                                                            </select>
-                                                        </div>
-                                                        <div>
+                                                        <div className="col-span-2">
                                                             <label className="text-xs text-neutral-400 ml-1">Leverage</label>
                                                             <select
                                                                 value={inputs.leverage}
@@ -224,30 +308,7 @@ export function AdvancedRiskCalculator() {
                                                             </p>
                                                         </div>
 
-                                                        {/* Gold Special Input */}
-                                                        {PAIR_DATA[inputs.currencyPair].type === 'Gold' && (
-                                                            <div className="col-span-2 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl">
-                                                                <label className="text-xs text-amber-200 font-medium flex items-center gap-1 mb-2">
-                                                                    <AlertTriangle className="w-3 h-3" /> Gold Pip Definition
-                                                                </label>
-                                                                <div className="flex gap-2">
-                                                                    {['0.01', '0.10', '1.00'].map((val) => (
-                                                                        <button
-                                                                            key={val}
-                                                                            onClick={() => updateInput('goldPipDefinition', val)}
-                                                                            className={`flex-1 text-xs py-1.5 rounded-lg border transition-all ${inputs.goldPipDefinition === val
-                                                                                ? 'bg-amber-500 text-black border-amber-500 font-bold'
-                                                                                : 'bg-black/20 border-white/10 text-neutral-400 hover:text-white'}`}
-                                                                        >
-                                                                            {val}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                                <p className="text-[10px] text-amber-200/60 mt-1.5">
-                                                                    Most common: 0.10 (Price shows 1 decimal like 2350.1)
-                                                                </p>
-                                                            </div>
-                                                        )}
+
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -261,12 +322,16 @@ export function AdvancedRiskCalculator() {
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
 
                                             <div className="p-6 text-center">
-                                                <h3 className="text-neutral-400 text-xs font-bold uppercase tracking-widest mb-2">Trade Size</h3>
+                                                <h3 className="text-neutral-400 text-xs font-bold uppercase tracking-widest mb-2">
+                                                    {inputs.mode === 'CalculateLots' ? "Trade Size" : "Max Stop Loss"}
+                                                </h3>
                                                 <div className="flex justify-center items-baseline gap-2 mb-1">
                                                     <span className="text-5xl font-black text-white tracking-tighter">
-                                                        {result.positionSize.lots}
+                                                        {inputs.mode === 'CalculateLots' ? result.positionSize.lots : result.recommendedSL}
                                                     </span>
-                                                    <span className="text-xl font-medium text-emerald-400">Lots</span>
+                                                    <span className="text-xl font-medium text-emerald-400">
+                                                        {inputs.mode === 'CalculateLots' ? "Lots" : "Pips"}
+                                                    </span>
                                                 </div>
 
                                                 <button
@@ -274,20 +339,26 @@ export function AdvancedRiskCalculator() {
                                                     className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 hover:bg-white/10 rounded-full text-[10px] sm:text-xs text-neutral-400 hover:text-white transition-all mb-1 border border-white/5 active:scale-95"
                                                 >
                                                     {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                                    {copied ? "Copied!" : "Copy Lots"}
+                                                    {copied ? "Copied!" : (inputs.mode === 'CalculateLots' ? "Copy Lots" : "Copy Pips")}
                                                 </button>
 
-                                                <div className="text-xs font-mono text-neutral-500">
-                                                    {result.positionSize.units.toLocaleString()} Units
-                                                </div>
+                                                {inputs.mode === 'CalculateLots' && (
+                                                    <div className="text-xs font-mono text-neutral-500">
+                                                        {result.positionSize.units.toLocaleString()} Units
+                                                    </div>
+                                                )}
+                                                {inputs.mode === 'CalculateSL' && (
+                                                    <div className="text-xs font-mono text-neutral-500">
+                                                        Based on {inputs.lotSizeInput} Lots
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Key Stats Grid */}
                                             <div className="grid grid-cols-2 border-t border-white/5">
                                                 <div className="p-4 text-center border-r border-white/5">
                                                     <div className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">Risk Amount</div>
-                                                    <div className="text-lg font-bold text-white mt-0.5">${result.riskAmount.usd}</div>
-                                                    <div className="text-xs text-neutral-500 font-mono">₹{result.riskAmount.inr.toLocaleString()}</div>
+                                                    <div className="text-lg font-bold text-white mt-0.5">${result.riskAmount}</div>
                                                 </div>
                                                 <div className="p-4 text-center">
                                                     <div className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">Margin</div>

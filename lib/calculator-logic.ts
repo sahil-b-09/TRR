@@ -41,17 +41,19 @@ export function calculateRisk(inputs: CalculatorInputs, rates: ExchangeRates): C
     if (!inputs.accountBalance || inputs.accountBalance <= 0) {
         throw new Error("Invalid Balance");
     }
-    if (!inputs.stopLossPips || inputs.stopLossPips <= 0) {
-        throw new Error("Invalid Stop Loss");
+
+    if (inputs.mode === 'CalculateLots') {
+        if (!inputs.stopLossPips || inputs.stopLossPips <= 0) {
+            throw new Error("Invalid Stop Loss");
+        }
+    } else {
+        if (!inputs.lotSizeInput || inputs.lotSizeInput <= 0) {
+            throw new Error("Invalid Lot Size");
+        }
     }
 
     const pairDef = PAIR_DATA[inputs.currencyPair];
     if (!pairDef) throw new Error("Unknown Pair");
-
-    // Validate Gold
-    if (pairDef.type === 'Gold' && !inputs.goldPipDefinition) {
-        throw new Error("Gold Definition Required");
-    }
 
 
     // --- 2. PIP VALUE CALCULATION ---
@@ -84,65 +86,63 @@ export function calculateRisk(inputs: CalculatorInputs, rates: ExchangeRates): C
             pipValueUSD = 6.66; // Fallback
         }
     } else if (pairDef.type === 'Gold') {
-        // 0.01 def -> $1
-        // 0.10 def -> $10
-        // 1.00 def -> $100
-        if (inputs.goldPipDefinition === '0.01') pipValueUSD = 1;
-        else if (inputs.goldPipDefinition === '0.10') pipValueUSD = 10;
-        else if (inputs.goldPipDefinition === '1.00') pipValueUSD = 100;
+        // Gold (XAUUSD):
+        // Standard Convention (Scenario A): $1 move = 10 Pips.
+        // Therefore, Pip Value per Standard Lot (100oz) on a standard account is effectively $10.
+        // Logic: 10 pips * $10 = $100 (which is the P/L for $1 move on 100oz).
+        pipValueUSD = 10;
     }
 
-    // --- 3. CONVERT TO ACCOUNT CURRENCY ---
-    // We need Pip Value in Account Currency.
-    // pipValueUSD is pip value in USD.
-    // if Account is USD -> pipValUSD
-    // if Account is EUR -> pipValUSD / EURUSD_Rate
-    // if Account is INR -> pipValUSD * USDINR_Rate
+    // --- 3. PIP VALUE (Generic Units) ---
+    // Since we removed Account Currency, we treat Account Balance as "USD/Base" equivalent
+    // for simplicity (PipValue 10 for majors).
+    const pipValueAccount = pipValueUSD;
 
-    let pipValueAccount = pipValueUSD;
-
-    if (inputs.accountCurrency === 'USD') {
-        pipValueAccount = pipValueUSD;
-    } else if (inputs.accountCurrency === 'EUR') {
-        // 1 USD = 0.9 EUR? No, API gives 1 USD = X EUR (e.g. 0.92) or EUR=1.09USD?
-        // exchangerate-api base USD gives: "EUR": 0.92 (meaning $1 = €0.92)
-        // Wait, usually EUR/USD is > 1. 
-        // exchangerate-api gives rates relative to Base.
-        // If Base=USD. "EUR": 0.92 means 1 USD = 0.92 EUR.
-        // So to convert USD to EUR, multiply by rate.
-        pipValueAccount = pipValueUSD * rates.EUR;
-        ratesUsed.push(`USD/EUR: ${rates.EUR}`);
-    } else if (inputs.accountCurrency === 'GBP') {
-        pipValueAccount = pipValueUSD * rates.GBP;
-    } else if (inputs.accountCurrency === 'JPY') {
-        pipValueAccount = pipValueUSD * rates.JPY;
-    } else if (inputs.accountCurrency === 'INR') {
-        pipValueAccount = pipValueUSD * rates.INR;
-    }
 
     // --- 4. RISK AMOUNT CALCULATION ---
-    // Risk is in Account Currency
-    const riskAmountAccount = inputs.accountBalance * (inputs.riskPercentage / 100);
-
-    // Calculate USD and INR equivalents for display
-    let riskUSD = riskAmountAccount;
-    let riskINR = riskAmountAccount;
-
-    if (inputs.accountCurrency === 'USD') {
-        riskUSD = riskAmountAccount;
-        riskINR = riskAmountAccount * rates.INR;
+    let riskAmountAccount = 0;
+    if (inputs.riskUnit === 'Amount') {
+        riskAmountAccount = inputs.riskAmount;
     } else {
-        // Convert account currency back to USD
-        // If 1 USD = X Rate. Then Account = USD * Rate. -> USD = Account / Rate.
-        const rateToUSD = rates[inputs.accountCurrency as keyof ExchangeRates] || 1;
-        riskUSD = riskAmountAccount / rateToUSD;
-        riskINR = riskUSD * rates.INR;
+        // Percentage
+        riskAmountAccount = inputs.accountBalance * (inputs.riskPercentage / 100);
     }
 
 
-    // --- 5. POSITION SIZE CALCULATION ---
-    // Lots = RiskAmount / (SL * PipValueAccount)
-    const positionLots = riskAmountAccount / (inputs.stopLossPips * pipValueAccount);
+    // --- 5. POSITION SIZE / SL CALCULATION ---
+    let positionLots = 0;
+    let recommendedSL = 0;
+
+    // Effective Stop Loss (Chart SL + Spread)
+    const effectiveSL = inputs.mode === 'CalculateLots'
+        ? inputs.stopLossPips + (inputs.spreadPips || 0)
+        : 0; // Not used in CalculateSL (Reverse) mode directly for lots, but for reverse calc?
+
+    if (inputs.mode === 'CalculateLots') {
+        const stopLossMoney = riskAmountAccount;
+        // Risk = Lots * PipValue * EffectiveSL
+        // Lots = Risk / (PipValue * EffectiveSL)
+
+        if (effectiveSL > 0 && pipValueAccount > 0) {
+            positionLots = stopLossMoney / (pipValueAccount * effectiveSL);
+        } else {
+            positionLots = 0;
+        }
+    } else {
+        // CalculateSL Mode (Find Stop Loss)
+        // User gives Lots, we find SL.
+        // Formula: Risk = Lots * PipValue * SL
+        // SL = Risk / (Lots * PipValue)
+        // Does Spread affect this?
+        // "I have 0.1 lots, $50 risk. What is my Max SL?"
+        // Result is "Total Distance". User should know this includes spread.
+        // We can just return the raw distance.
+        const lots = inputs.lotSizeInput || 0;
+        if (lots > 0) {
+            recommendedSL = riskAmountAccount / (lots * pipValueAccount);
+        }
+        positionLots = lots; // For margin calc downstream
+    }
 
 
     // --- 6. MARGIN CALCULATION ---
@@ -160,12 +160,9 @@ export function calculateRisk(inputs: CalculatorInputs, rates: ExchangeRates): C
         notionalUSD = positionLots * 100 * 2350;
     }
 
-    // Convert Notional to Account Currency to compare with Balance
     let notionalAccount = notionalUSD;
-    if (inputs.accountCurrency !== 'USD') {
-        const rate = rates[inputs.accountCurrency as keyof ExchangeRates] || 1;
-        notionalAccount = notionalUSD * rate;
-    }
+    // Since we treat account as base USD always now
+    notionalAccount = notionalUSD;
 
     const marginRequired = notionalAccount / leverageVal;
     const marginPercent = (marginRequired / inputs.accountBalance) * 100;
@@ -233,22 +230,15 @@ export function calculateRisk(inputs: CalculatorInputs, rates: ExchangeRates): C
         });
     }
 
-    // --- 10. ACCOUNT VIABILITY CHECK ---
+    // --- 9. WARNINGS ---
     // Rule: If position < 0.01 lots, account is technically too small for this risk/SL combo
-    if (positionLots < 0.01) {
+    if (positionLots > 0 && positionLots < 0.01) {
         // Calculate required balance for 0.01 lots
-        // 0.01 = Risk / (SL * PipVal)
-        // Risk = 0.01 * SL * PipVal
-        // Risk = Balance * (Risk% / 100)
-        // Balance * (Risk% / 100) = 0.01 * SL * PipVal
-        // Balance = (0.01 * SL * PipVal * 100) / Risk%
-        const minBalance = (0.01 * inputs.stopLossPips * pipValueAccount * 100) / inputs.riskPercentage;
+        const slForCalc = inputs.mode === 'CalculateLots' ? (inputs.stopLossPips + (inputs.spreadPips || 0)) : 10; // Fallback
+        const minBalance = (0.01 * slForCalc * pipValueAccount * 100) / inputs.riskPercentage;
 
-        let currencySymbol = '$';
-        if (inputs.accountCurrency === 'EUR') currencySymbol = '€';
-        if (inputs.accountCurrency === 'GBP') currencySymbol = '£';
-        if (inputs.accountCurrency === 'JPY') currencySymbol = '¥';
-        if (inputs.accountCurrency === 'INR') currencySymbol = '₹';
+        // Generic currency symbol since we removed selector
+        const currencySymbol = '$';
 
         warnings.push({
             severity: 'Low', // Informational/Recommendation
@@ -266,11 +256,8 @@ export function calculateRisk(inputs: CalculatorInputs, rates: ExchangeRates): C
             miniLots: Number((positionLots * 10).toFixed(1)),
             microLots: Number((positionLots * 100).toFixed(0))
         },
-        riskAmount: {
-            accountCurrency: Number(riskAmountAccount.toFixed(2)),
-            usd: Number(riskUSD.toFixed(2)),
-            inr: Number(riskINR.toFixed(2))
-        },
+        recommendedSL: Number(recommendedSL.toFixed(1)),
+        riskAmount: Number(riskAmountAccount.toFixed(2)),
         margin: {
             required: Number(marginRequired.toFixed(2)),
             percent: Number(marginPercent.toFixed(1)),

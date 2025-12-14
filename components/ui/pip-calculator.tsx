@@ -1,31 +1,36 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Ruler, ArrowRight, ArrowUp, ArrowDown } from "lucide-react";
+import { X, Ruler, ArrowRight, ArrowUp, ArrowDown, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type AssetType = "Standard" | "JPY" | "Gold";
+type AssetType = "Standard" | "Gold";
 
 export function PipCalculator() {
     const [isOpen, setIsOpen] = useState(false);
 
     const [priceA, setPriceA] = useState<string>("");
     const [priceB, setPriceB] = useState<string>("");
+    const [lotSize, setLotSize] = useState<string>("1.0");
     const [assetType, setAssetType] = useState<AssetType>("Standard");
     const [result, setResult] = useState<number | null>(null);
+    const [estimatedProfit, setEstimatedProfit] = useState<number | null>(null);
 
     // Auto-calculate
     useEffect(() => {
         if (!priceA || !priceB) {
             setResult(null);
+            setEstimatedProfit(null);
             return;
         }
 
         const a = parseFloat(priceA);
         const b = parseFloat(priceB);
+        const lots = parseFloat(lotSize) || 0;
 
         if (isNaN(a) || isNaN(b)) {
             setResult(null);
+            setEstimatedProfit(null);
             return;
         }
 
@@ -35,16 +40,22 @@ export function PipCalculator() {
         if (assetType === "Standard") {
             // 0.0001 = 1 Pip
             pips = diff * 10000;
-        } else if (assetType === "JPY") {
-            // 0.01 = 1 Pip
-            pips = diff * 100;
         } else if (assetType === "Gold") {
-            // 0.10 = 1 Pip (Standard Broker Def) --> Updated to 0.01 = 1 Pip (Dupoin/Modern Standard)
-            pips = diff * 100;
+            // 0.10 = 1 Pip (Scenario A - Trader Standard)
+            pips = diff * 10;
         }
 
-        setResult(Number(pips.toFixed(1)));
-    }, [priceA, priceB, assetType]);
+        const pipCount = Number(pips.toFixed(1));
+        setResult(pipCount);
+
+        // Profit Calculation
+        // Formula: Pips * LotSize * 10 (valid for Standard and Gold Scenario A)
+        // Example Gold: 10 pips * 1.0 lot * 10 = $100.
+        // Example Standard: 50 pips * 1.0 lot * 10 = $500.
+        const profit = pipCount * lots * 10;
+        setEstimatedProfit(Number(profit.toFixed(2)));
+
+    }, [priceA, priceB, assetType, lotSize]);
 
 
     return (
@@ -82,7 +93,7 @@ export function PipCalculator() {
                             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#16181D]">
                                 <div className="flex items-center gap-2">
                                     <Ruler className="w-5 h-5 text-indigo-400" />
-                                    <h2 className="text-lg font-bold text-white tracking-tight">Pip Distance</h2>
+                                    <h2 className="text-lg font-bold text-white tracking-tight">Pip & Profit</h2>
                                 </div>
                                 <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors">
                                     <X className="w-5 h-5" />
@@ -92,88 +103,111 @@ export function PipCalculator() {
                             {/* Content */}
                             <div className="p-6 space-y-6">
 
-                                {/* Asset Selector */}
-                                <div>
-                                    <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Asset Type</label>
-                                    <div className="flex bg-[#1E2028] p-1 rounded-xl mt-2 border border-white/5">
-                                        {(["Standard", "JPY", "Gold"] as AssetType[]).map((type) => (
-                                            <button
-                                                key={type}
-                                                onClick={() => setAssetType(type)}
-                                                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${assetType === type
-                                                    ? 'bg-indigo-600 text-white shadow-lg'
-                                                    : 'text-neutral-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <p className="text-[10px] text-neutral-500 mt-2 ml-1">
-                                        {assetType === "Standard" && "For pairs like EUR/USD, GBP/USD (4 decimals)"}
-                                        {assetType === "JPY" && "For pairs like USD/JPY, GBP/JPY (2 decimals)"}
-                                        {assetType === "Gold" && "For XAU/USD (Assumes $1 = 100 Pips)"}
-                                    </p>
-                                </div>
-
-                                {/* Inputs */}
-                                <div className="flex items-center gap-3">
+                                {/* Top Row: Asset & Lot Size */}
+                                <div className="flex flex-col sm:flex-row gap-4">
                                     <div className="flex-1">
-                                        <label className="text-xs text-neutral-400 ml-1 mb-1 block">Price A (Start)</label>
+                                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Asset</label>
+                                        <div className="flex bg-[#1E2028] p-1 rounded-xl mt-2 border border-white/5">
+                                            {(["Standard", "Gold"] as AssetType[]).map((type) => (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => setAssetType(type)}
+                                                    className={`flex-1 py-3 sm:py-2 rounded-lg text-xs font-medium transition-all ${assetType === type
+                                                        ? 'bg-indigo-600 text-white shadow-lg'
+                                                        : 'text-neutral-400 hover:text-white'
+                                                        }`}
+                                                >
+                                                    {type}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="w-full sm:w-1/3">
+                                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Lots</label>
                                         <input
                                             type="number"
+                                            inputMode="decimal"
+                                            value={lotSize}
+                                            onChange={(e) => setLotSize(e.target.value)}
+                                            step="0.01"
+                                            placeholder="1.0"
+                                            className="w-full mt-2 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-3 text-center text-white focus:border-indigo-500 outline-none transition-all font-mono font-bold"
+                                        />
+                                    </div>
+                                </div>
+
+                                <p className="text-[10px] text-neutral-500 ml-1">
+                                    {assetType === "Standard" && "4 Decimal Pairs (e.g. EURUSD). $10/pip for 1.0 Lot."}
+                                    {assetType === "Gold" && "XAUUSD. $1 Move = 10 Pips = $100 Profit (1.0 Lot)."}
+                                </p>
+
+                                {/* Inputs */}
+                                <div className="flex flex-col sm:flex-row items-center gap-3">
+                                    <div className="flex-1 w-full">
+                                        <label className="text-xs text-neutral-400 ml-1 mb-1 block">Open Price</label>
+                                        <input
+                                            type="number"
+                                            inputMode="decimal"
                                             value={priceA}
                                             onChange={(e) => setPriceA(e.target.value)}
-                                            placeholder={assetType === "Gold" ? "2350.50" : "1.0000"}
+                                            placeholder={assetType === "Gold" ? "2350.00" : "1.0000"}
                                             className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-indigo-500 outline-none transition-all font-mono"
                                         />
                                     </div>
-                                    <div className="pt-5 text-neutral-600">
+                                    <div className="pt-0 sm:pt-5 text-neutral-600 rotate-90 sm:rotate-0">
                                         <ArrowRight className="w-5 h-5" />
                                     </div>
-                                    <div className="flex-1">
-                                        <label className="text-xs text-neutral-400 ml-1 mb-1 block">Price B (End)</label>
+                                    <div className="flex-1 w-full">
+                                        <label className="text-xs text-neutral-400 ml-1 mb-1 block">Close Price</label>
                                         <input
                                             type="number"
+                                            inputMode="decimal"
                                             value={priceB}
                                             onChange={(e) => setPriceB(e.target.value)}
-                                            placeholder={assetType === "Gold" ? "2351.50" : "1.0050"}
+                                            placeholder={assetType === "Gold" ? "2350.10" : "1.0050"}
                                             className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-indigo-500 outline-none transition-all font-mono"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Result Display */}
-                                <div className="bg-[#1E2028] rounded-2xl border border-white/5 p-6 flex flex-col items-center justify-center min-h-[140px] relative overflow-hidden">
+                                <div className="bg-[#1E2028] rounded-2xl border border-white/5 p-6 relative overflow-hidden">
                                     {/* Background Glow */}
                                     {result !== null && (
-                                        <div className={`absolute inset-0 opacity-20 blur-3xl ${result >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                        <div className={`absolute inset-0 opacity-10 blur-3xl ${result >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                     )}
 
                                     {result !== null ? (
-                                        <>
-                                            <div className="flex items-center gap-3 mb-1 relative z-10">
-                                                {result >= 0 ? (
-                                                    <ArrowUp className="w-8 h-8 text-emerald-500" />
-                                                ) : (
-                                                    <ArrowDown className="w-8 h-8 text-rose-500" />
-                                                )}
-                                                <span className={`text-6xl font-black tracking-tighter ${result >= 0 ? 'text-white' : 'text-white'}`}>
-                                                    {Math.abs(result)}
-                                                </span>
+                                        <div className="space-y-6">
+                                            {/* Pips Section */}
+                                            <div className="flex flex-col items-center">
+                                                <div className="flex items-center gap-3 relative z-10">
+                                                    {result >= 0 ? (
+                                                        <ArrowUp className="w-6 h-6 text-emerald-500" />
+                                                    ) : (
+                                                        <ArrowDown className="w-6 h-6 text-rose-500" />
+                                                    )}
+                                                    <span className={`text-4xl font-black tracking-tighter text-white`}>
+                                                        {Math.abs(result)} <span className="text-lg font-medium text-neutral-500">Pips</span>
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span className="text-sm font-medium text-neutral-400 uppercase tracking-widest relative z-10">Pips</span>
 
-                                            <div className={`mt-4 px-3 py-1 rounded-full text-xs font-mono font-medium border relative z-10 ${result >= 0
-                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-                                                : 'bg-rose-500/10 border-rose-500/20 text-rose-300'
-                                                }`}>
-                                                {result > 0 ? "+" : ""}{result} Pips Distance
+                                            {/* Divider */}
+                                            <div className="h-px w-full bg-white/5" />
+
+                                            {/* Profit Section */}
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[10px] uppercase tracking-widest text-neutral-400 mb-1">Estimated P/L</span>
+                                                <div className={`text-3xl font-mono font-bold flex items-center ${estimatedProfit! >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {estimatedProfit! >= 0 ? '+' : '-'}${Math.abs(estimatedProfit!)}
+                                                </div>
                                             </div>
-                                        </>
+
+                                        </div>
                                     ) : (
-                                        <div className="text-neutral-600 text-sm font-medium">
-                                            Enter prices to calculate range
+                                        <div className="text-center py-8 text-neutral-600 text-sm font-medium">
+                                            Enter prices to calculate range & profit
                                         </div>
                                     )}
                                 </div>
