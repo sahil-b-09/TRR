@@ -81,7 +81,7 @@ export const SocialConnect = () => {
                   style={{ mixBlendMode: 'screen' }}
                 />
               </div>
-              <span className="icon-label group-hover:translate-y-1 group-hover:opacity-100">Broker Used</span>
+              <span className="icon-label group-hover:translate-y-1 group-hover:opacity-100">Dupoin</span>
             </a>
 
           </div>
