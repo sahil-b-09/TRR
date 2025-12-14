@@ -1,5 +1,5 @@
 import React from 'react';
-import { Instagram, Youtube, Send, Phone } from 'lucide-react';
+import { Instagram, Youtube, Send, Phone, TrendingUp } from 'lucide-react';
 
 export const SocialConnect = () => {
   return (
@@ -71,6 +71,19 @@ export const SocialConnect = () => {
               <span className="icon-label group-hover:translate-y-1 group-hover:opacity-100">Telegram</span>
             </a>
 
+            {/* Broker Used - Passive Mention */}
+            <a href="https://m.dupoin.vip/bYEM6dcuI" target="_blank" rel="noopener noreferrer" className="social-icon broker group">
+              <div className="icon-container group-hover:scale-110 duration-300">
+                <img
+                  src="/dupoin-logo-perfect.png"
+                  alt="Dupoin Market"
+                  className="w-8 h-8 object-contain transition-opacity block"
+                  style={{ mixBlendMode: 'screen' }}
+                />
+              </div>
+              <span className="icon-label group-hover:translate-y-1 group-hover:opacity-100">Broker Used</span>
+            </a>
+
           </div>
         </div>
       </div>
@@ -131,9 +144,14 @@ export const SocialConnect = () => {
           background: #25D366;
           box-shadow: 0 0 20px rgba(37, 211, 102, 0.6);
         }
+
+        .social-icon.broker:hover .icon-container {
+          background: #33B5A6; 
+          box-shadow: 0 0 20px rgba(51, 181, 166, 0.6);
+        }
         
         /* Shake Animation */
-        .social-icon:hover svg {
+        .social-icon:hover svg, .social-icon:hover img {
           animation: shake 0.5s;
         }
         

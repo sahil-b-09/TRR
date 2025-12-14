@@ -1,7 +1,7 @@
 export type AccountCurrency = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'INR';
 export type PairType = 'Major' | 'JPY' | 'Gold' | 'Minor';
 export type GoldPipDefinition = '0.01' | '0.10' | '1.00';
-export type Leverage = '10:1' | '20:1' | '30:1' | '50:1' | '100:1' | '200:1';
+export type Leverage = '1:100' | '1:200' | '1:500' | '1:1000';
 
 export interface CalculatorInputs {
     accountBalance: number;

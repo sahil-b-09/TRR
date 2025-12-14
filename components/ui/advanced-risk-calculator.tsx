@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calculator, AlertTriangle, Settings, ChevronDown, ChevronUp, CheckCircle, Info } from "lucide-react";
+import { X, Calculator, AlertTriangle, Settings, ChevronDown, ChevronUp, CheckCircle, Info, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalculatorInputs, CalculatorResult, Leverage } from "@/lib/calculator-types";
 import { calculateRisk, PAIR_DATA } from "@/lib/calculator-logic";
 import { useExchangeRates } from "@/lib/hooks/useExchangeRates";
 
 const PAIR_OPTIONS = Object.keys(PAIR_DATA);
-const LEVERAGE_OPTIONS: Leverage[] = ['10:1', '20:1', '30:1', '50:1', '100:1', '200:1'];
+const LEVERAGE_OPTIONS: Leverage[] = ['1:100', '1:200', '1:500', '1:1000'];
 const RISK_OPTIONS = [0.5, 1, 2, 3];
 
 export function AdvancedRiskCalculator() {
@@ -23,13 +23,14 @@ export function AdvancedRiskCalculator() {
         currencyPair: 'EUR/USD',
         stopLossPips: 30, // Tighter default
         riskPercentage: 1,
-        leverage: '100:1', // Student friendly default
+        leverage: '1:500', // Standard broker leverage
         goldPipDefinition: '0.10',
         targetProfitPips: 60
     });
 
     const [result, setResult] = useState<CalculatorResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
     // Calculate Effect
     useEffect(() => {
@@ -45,6 +46,13 @@ export function AdvancedRiskCalculator() {
 
     const updateInput = (field: keyof CalculatorInputs, value: any) => {
         setInputs(prev => ({ ...prev, [field]: value }));
+    };
+
+    const copyToClipboard = () => {
+        if (!result) return;
+        navigator.clipboard.writeText(result.positionSize.lots.toString());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
@@ -209,6 +217,13 @@ export function AdvancedRiskCalculator() {
                                                             </select>
                                                         </div>
 
+                                                        {/* Broker Disclosure - Plain Text */}
+                                                        <div className="col-span-2 mt-2">
+                                                            <p className="text-[10px] text-neutral-500 leading-relaxed">
+                                                                *Leverage options are based on <a href="https://m.dupoin.vip/bYEM6dcuI" target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-400 transition-colors">Dupoin Market</a> for calculation consistency. Used internally, but you are free to use any broker. Actual results vary by broker conditions.
+                                                            </p>
+                                                        </div>
+
                                                         {/* Gold Special Input */}
                                                         {PAIR_DATA[inputs.currencyPair].type === 'Gold' && (
                                                             <div className="col-span-2 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl">
@@ -253,6 +268,15 @@ export function AdvancedRiskCalculator() {
                                                     </span>
                                                     <span className="text-xl font-medium text-emerald-400">Lots</span>
                                                 </div>
+
+                                                <button
+                                                    onClick={copyToClipboard}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 hover:bg-white/10 rounded-full text-[10px] sm:text-xs text-neutral-400 hover:text-white transition-all mb-1 border border-white/5 active:scale-95"
+                                                >
+                                                    {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                    {copied ? "Copied!" : "Copy Lots"}
+                                                </button>
+
                                                 <div className="text-xs font-mono text-neutral-500">
                                                     {result.positionSize.units.toLocaleString()} Units
                                                 </div>
@@ -268,7 +292,7 @@ export function AdvancedRiskCalculator() {
                                                 <div className="p-4 text-center">
                                                     <div className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">Margin</div>
                                                     <div className={`text-lg font-bold mt-0.5 ${result.margin.status === 'Safe' ? 'text-emerald-400' :
-                                                            result.margin.status === 'Caution' ? 'text-amber-400' : 'text-rose-400'
+                                                        result.margin.status === 'Caution' ? 'text-amber-400' : 'text-rose-400'
                                                         }`}>
                                                         ${result.margin.required.toLocaleString()}
                                                     </div>
@@ -281,7 +305,7 @@ export function AdvancedRiskCalculator() {
                                             {/* Safety Check Banner */}
                                             {(result.warnings.length > 0 || result.margin.status !== 'Safe') ? (
                                                 <div className={`py-2 px-4 text-xs font-medium flex items-center justify-center gap-2 ${result.margin.status === 'Danger' ? 'bg-rose-500/20 text-rose-200' :
-                                                        'bg-amber-500/20 text-amber-200'
+                                                    'bg-amber-500/20 text-amber-200'
                                                     }`}>
                                                     <AlertTriangle className="w-3.5 h-3.5" />
                                                     {result.warnings[0]?.message || "Check margin usage carefully"}

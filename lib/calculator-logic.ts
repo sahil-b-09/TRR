@@ -23,12 +23,10 @@ export const PAIR_DATA: Record<string, PairDefinition> = {
 };
 
 const LEVERAGE_MAP: Record<Leverage, number> = {
-    '10:1': 10,
-    '20:1': 20,
-    '30:1': 30,
-    '50:1': 50,
-    '100:1': 100,
-    '200:1': 200,
+    '1:100': 100,
+    '1:200': 200,
+    '1:500': 500,
+    '1:1000': 1000,
 };
 
 // ==========================================
@@ -232,6 +230,30 @@ export function calculateRisk(inputs: CalculatorInputs, rates: ExchangeRates): C
             severity: 'Critical',
             title: 'Reckless Risk',
             message: 'Risking >5% per trade leads to rapid account blowup.'
+        });
+    }
+
+    // --- 10. ACCOUNT VIABILITY CHECK ---
+    // Rule: If position < 0.01 lots, account is technically too small for this risk/SL combo
+    if (positionLots < 0.01) {
+        // Calculate required balance for 0.01 lots
+        // 0.01 = Risk / (SL * PipVal)
+        // Risk = 0.01 * SL * PipVal
+        // Risk = Balance * (Risk% / 100)
+        // Balance * (Risk% / 100) = 0.01 * SL * PipVal
+        // Balance = (0.01 * SL * PipVal * 100) / Risk%
+        const minBalance = (0.01 * inputs.stopLossPips * pipValueAccount * 100) / inputs.riskPercentage;
+
+        let currencySymbol = '$';
+        if (inputs.accountCurrency === 'EUR') currencySymbol = '€';
+        if (inputs.accountCurrency === 'GBP') currencySymbol = '£';
+        if (inputs.accountCurrency === 'JPY') currencySymbol = '¥';
+        if (inputs.accountCurrency === 'INR') currencySymbol = '₹';
+
+        warnings.push({
+            severity: 'Low', // Informational/Recommendation
+            title: 'Account Size Recommendation',
+            message: `Your account is too small for this trade setup. To trade 0.01 lots safely, you need at least ${currencySymbol}${Math.ceil(minBalance)}.`
         });
     }
 
