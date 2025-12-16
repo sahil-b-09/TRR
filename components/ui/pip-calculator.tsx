@@ -5,6 +5,7 @@ import { X, Ruler, ArrowRight, ArrowUp, ArrowDown, DollarSign } from "lucide-rea
 import { motion, AnimatePresence } from "framer-motion";
 
 type AssetType = "Standard" | "Gold";
+type Direction = "Buy" | "Sell";
 
 export function PipCalculator() {
     const [isOpen, setIsOpen] = useState(false);
@@ -12,6 +13,8 @@ export function PipCalculator() {
     const [priceA, setPriceA] = useState<string>("");
     const [priceB, setPriceB] = useState<string>("");
     const [lotSize, setLotSize] = useState<string>("1.0");
+    const [spread, setSpread] = useState<string>("");
+    const [direction, setDirection] = useState<Direction>("Buy");
     const [assetType, setAssetType] = useState<AssetType>("Standard");
     const [result, setResult] = useState<number | null>(null);
     const [estimatedProfit, setEstimatedProfit] = useState<number | null>(null);
@@ -27,6 +30,7 @@ export function PipCalculator() {
         const a = parseFloat(priceA);
         const b = parseFloat(priceB);
         const lots = parseFloat(lotSize) || 0;
+        const spreadVal = parseFloat(spread) || 0;
 
         if (isNaN(a) || isNaN(b)) {
             setResult(null);
@@ -34,28 +38,33 @@ export function PipCalculator() {
             return;
         }
 
-        let diff = b - a;
+        // Calculate raw difference
+        // Buy: Close - Open (b - a)
+        // Sell: Open - Close (a - b)
+        let diff = direction === "Buy" ? (b - a) : (a - b);
+        
         let pips = 0;
 
         if (assetType === "Standard") {
             // 0.0001 = 1 Pip
             pips = diff * 10000;
         } else if (assetType === "Gold") {
-            // 0.10 = 1 Pip (Scenario A - Trader Standard)
+            // 0.10 = 1 Pip
             pips = diff * 10;
         }
+
+        // Subtract spread
+        pips -= spreadVal;
 
         const pipCount = Number(pips.toFixed(1));
         setResult(pipCount);
 
         // Profit Calculation
-        // Formula: Pips * LotSize * 10 (valid for Standard and Gold Scenario A)
-        // Example Gold: 10 pips * 1.0 lot * 10 = $100.
-        // Example Standard: 50 pips * 1.0 lot * 10 = $500.
+        // Standard/Gold Scenario A: Profit = Pips * Lots * 10
         const profit = pipCount * lots * 10;
         setEstimatedProfit(Number(profit.toFixed(2)));
 
-    }, [priceA, priceB, assetType, lotSize]);
+    }, [priceA, priceB, assetType, lotSize, spread, direction]);
 
 
     return (
@@ -140,6 +149,39 @@ export function PipCalculator() {
                                     {assetType === "Standard" && "4 Decimal Pairs (e.g. EURUSD). $10/pip for 1.0 Lot."}
                                     {assetType === "Gold" && "XAUUSD. $1 Move = 10 Pips = $100 Profit (1.0 Lot)."}
                                 </p>
+
+                                {/* Direction & Spread */}
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <div className="flex-1">
+                                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Direction</label>
+                                        <div className="flex bg-[#1E2028] p-1 rounded-xl mt-2 border border-white/5">
+                                            {(["Buy", "Sell"] as Direction[]).map((type) => (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => setDirection(type)}
+                                                    className={`flex-1 py-3 sm:py-2 rounded-lg text-xs font-medium transition-all ${direction === type
+                                                        ? (type === 'Buy' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-rose-600 text-white shadow-lg')
+                                                        : 'text-neutral-400 hover:text-white'
+                                                        }`}
+                                                >
+                                                    {type.toUpperCase()}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="w-full sm:w-1/3">
+                                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Spread</label>
+                                        <input
+                                            type="number"
+                                            inputMode="decimal"
+                                            value={spread}
+                                            onChange={(e) => setSpread(e.target.value)}
+                                            step="0.1"
+                                            placeholder="0"
+                                            className="w-full mt-2 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-3 text-center text-white focus:border-indigo-500 outline-none transition-all font-mono font-bold"
+                                        />
+                                    </div>
+                                </div>
 
                                 {/* Inputs */}
                                 <div className="flex flex-col sm:flex-row items-center gap-3">
