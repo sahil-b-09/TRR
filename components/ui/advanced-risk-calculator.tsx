@@ -151,6 +151,7 @@ export function AdvancedRiskCalculator() {
                                         <div className="col-span-1 sm:col-span-2">
                                             <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider ml-1">Currency Pair</label>
                                             <select
+                                                aria-label="Select Currency Pair"
                                                 value={inputs.currencyPair}
                                                 onChange={(e) => updateInput('currencyPair', e.target.value)}
                                                 className="w-full mt-1.5 bg-[#1E2028] border border-white/10 rounded-xl py-4 sm:py-3 px-4 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all font-medium appearance-none text-base"
@@ -165,6 +166,7 @@ export function AdvancedRiskCalculator() {
                                             <div className="relative mt-1.5">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-medium">$</span>
                                                 <input
+                                                    aria-label="Account Balance"
                                                     type="number"
                                                     inputMode="decimal"
                                                     value={inputs.accountBalance}
@@ -182,6 +184,7 @@ export function AdvancedRiskCalculator() {
                                             {inputs.mode === 'CalculateLots' ? (
                                                 <div className="flex gap-2 mt-1.5">
                                                     <input
+                                                        aria-label="Stop Loss in Pips"
                                                         type="number"
                                                         inputMode="decimal"
                                                         value={inputs.stopLossPips}
@@ -192,6 +195,7 @@ export function AdvancedRiskCalculator() {
                                                     {/* Spread Input (Mini) */}
                                                     <div className="w-[35%] relative group">
                                                         <input
+                                                            aria-label="Spread in Pips"
                                                             type="number"
                                                             inputMode="decimal"
                                                             value={inputs.spreadPips || ''}
@@ -206,6 +210,7 @@ export function AdvancedRiskCalculator() {
                                                 </div>
                                             ) : (
                                                 <input
+                                                    aria-label="Lot Size"
                                                     type="number"
                                                     inputMode="decimal"
                                                     value={inputs.lotSizeInput}
@@ -252,6 +257,7 @@ export function AdvancedRiskCalculator() {
                                                     ))}
                                                     <div className="w-[80px] relative">
                                                         <input
+                                                            aria-label="Risk Percentage"
                                                             type="number"
                                                             inputMode="decimal"
                                                             value={inputs.riskPercentage}
@@ -278,6 +284,7 @@ export function AdvancedRiskCalculator() {
                                                     <div className="w-[80px] relative">
                                                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500 font-medium text-xs">$</span>
                                                         <input
+                                                            aria-label="Risk Amount in Dollars"
                                                             type="number"
                                                             inputMode="decimal"
                                                             value={inputs.riskAmount}
@@ -314,6 +321,7 @@ export function AdvancedRiskCalculator() {
                                                         <div className="col-span-2">
                                                             <label className="text-xs text-neutral-400 ml-1">Leverage</label>
                                                             <select
+                                                                aria-label="Select Leverage"
                                                                 value={inputs.leverage}
                                                                 onChange={(e) => updateInput('leverage', e.target.value)}
                                                                 className="w-full mt-1 bg-[#1E2028] border border-white/10 rounded-lg py-2 px-3 text-sm text-white outline-none"

@@ -148,6 +148,7 @@ export function PipCalculator() {
                                     <div className="w-full sm:w-1/3">
                                         <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Lots</label>
                                         <input
+                                            aria-label="Lot Size"
                                             type="number"
                                             inputMode="decimal"
                                             value={lotSize}
@@ -186,6 +187,7 @@ export function PipCalculator() {
                                     <div className="w-full sm:w-1/3">
                                         <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Spread</label>
                                         <input
+                                            aria-label="Spread"
                                             type="number"
                                             inputMode="decimal"
                                             value={spread}
@@ -202,6 +204,7 @@ export function PipCalculator() {
                                     <div className="flex-1 w-full">
                                         <label className="text-xs text-neutral-400 ml-1 mb-1 block">Open Price</label>
                                         <input
+                                            aria-label="Open Price"
                                             type="number"
                                             inputMode="decimal"
                                             value={priceA}
@@ -216,6 +219,7 @@ export function PipCalculator() {
                                     <div className="flex-1 w-full">
                                         <label className="text-xs text-neutral-400 ml-1 mb-1 block">Close Price</label>
                                         <input
+                                            aria-label="Close Price"
                                             type="number"
                                             inputMode="decimal"
                                             value={priceB}
