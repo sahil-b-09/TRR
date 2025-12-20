@@ -42,7 +42,7 @@ export function PipCalculator() {
         // Buy: Close - Open (b - a)
         // Sell: Open - Close (a - b)
         let diff = direction === "Buy" ? (b - a) : (a - b);
-        
+
         let pips = 0;
 
         if (assetType === "Standard") {
@@ -65,6 +65,20 @@ export function PipCalculator() {
         setEstimatedProfit(Number(profit.toFixed(2)));
 
     }, [priceA, priceB, assetType, lotSize, spread, direction]);
+
+    // Analytics Helper
+    const trackEvent = (action: string, params: any = {}) => {
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', action, params);
+        }
+    };
+
+    // Track Open
+    useEffect(() => {
+        if (isOpen) {
+            trackEvent('calculator_opened', { calculator: 'pip_calculator' });
+        }
+    }, [isOpen]);
 
 
     return (

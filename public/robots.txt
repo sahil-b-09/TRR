@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.therichroyals.com/sitemap.xml
+Sitemap: https://www.therichroyals.in/sitemap.xml

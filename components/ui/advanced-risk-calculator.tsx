@@ -50,6 +50,20 @@ export function AdvancedRiskCalculator() {
         setInputs(prev => ({ ...prev, [field]: value }));
     };
 
+    // Analytics Helper
+    const trackEvent = (action: string, params: any = {}) => {
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', action, params);
+        }
+    };
+
+    // Track Open
+    useEffect(() => {
+        if (isOpen) {
+            trackEvent('calculator_opened', { calculator: 'risk_calculator' });
+        }
+    }, [isOpen]);
+
     const copyToClipboard = () => {
         if (!result) return;
         const textToCopy = inputs.mode === 'CalculateLots'
@@ -59,6 +73,13 @@ export function AdvancedRiskCalculator() {
         navigator.clipboard.writeText(textToCopy);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+
+        // Track Copy
+        trackEvent('calculator_copy', {
+            calculator: 'risk_calculator',
+            mode: inputs.mode,
+            value: textToCopy
+        });
     };
 
     return (
