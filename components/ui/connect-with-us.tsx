@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Instagram, Youtube, Send, Phone, TrendingUp } from 'lucide-react';
 
 export const SocialConnect = () => {
@@ -181,6 +182,30 @@ export const SocialConnect = () => {
           opacity: 1;
         }
       `}} />
+      <div className="mt-16 border-t border-white/5 pt-8 w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-8 text-center sm:text-left">
+        <div>
+          <h4 className="text-white font-bold mb-4">The Rich Royals</h4>
+          <p className="text-neutral-500 text-sm leading-relaxed">
+            Empowering traders with precision tools and elite mentorship. <br /> Master the markets with confidence.
+          </p>
+        </div>
+        <div className="flex flex-col sm:items-end">
+          <h4 className="text-white font-bold mb-4">Trading Tools</h4>
+          <ul className="space-y-2 text-sm text-neutral-400">
+            <li>
+              <Link to="/tools/risk-calculator" className="hover:text-emerald-400 transition-colors">Forex Risk Calculator</Link>
+            </li>
+            <li>
+              <Link to="/tools/pip-calculator" className="hover:text-indigo-400 transition-colors">Pip Value Calculator</Link>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <p className="mt-12 text-xs text-neutral-600">
+        © {new Date().getFullYear()} The Rich Royals. All rights reserved.
+      </p>
+
     </div>
   );
 };
