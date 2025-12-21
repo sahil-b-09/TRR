@@ -203,7 +203,7 @@ export const SocialConnect = () => {
       </div>
 
       <p className="mt-12 text-xs text-neutral-600">
-        © {new Date().getFullYear()} The Rich Royals. All rights reserved.
+        © 2021 The Rich Royals. All rights reserved.
       </p>
 
     </div>

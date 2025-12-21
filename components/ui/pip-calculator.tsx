@@ -85,6 +85,158 @@ export const PipCalculator: React.FC<PipCalcProps> = ({ isInline = false }) => {
         }
     }, [isOpen]);
 
+    const renderContent = () => (
+        <div className="p-6 space-y-6">
+
+            {/* Top Row: Asset & Lot Size */}
+            <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                    <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Asset</label>
+                    <div className="flex bg-[#1E2028] p-1 rounded-xl mt-2 border border-white/5">
+                        {(["Standard", "Gold"] as AssetType[]).map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => setAssetType(type)}
+                                className={`flex-1 py-3 sm:py-2 rounded-lg text-xs font-medium transition-all ${assetType === type
+                                    ? 'bg-indigo-600 text-white shadow-lg'
+                                    : 'text-neutral-400 hover:text-white'
+                                    }`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <div className="w-full sm:w-1/3">
+                    <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Lots</label>
+                    <input
+                        aria-label="Lot Size"
+                        type="number"
+                        inputMode="decimal"
+                        value={lotSize}
+                        onChange={(e) => setLotSize(e.target.value)}
+                        step="0.01"
+                        placeholder="1.0"
+                        className="w-full mt-2 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-3 text-center text-white focus:border-indigo-500 outline-none transition-all font-mono font-bold"
+                    />
+                </div>
+            </div>
+
+            <p className="text-[10px] text-neutral-500 ml-1">
+                {assetType === "Standard" && "4 Decimal Pairs (e.g. EURUSD). $10/pip for 1.0 Lot."}
+                {assetType === "Gold" && "XAUUSD. $1 Move = 10 Pips = $100 Profit (1.0 Lot)."}
+            </p>
+
+            {/* Direction & Spread */}
+            <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                    <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Direction</label>
+                    <div className="flex bg-[#1E2028] p-1 rounded-xl mt-2 border border-white/5">
+                        {(["Buy", "Sell"] as Direction[]).map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => setDirection(type)}
+                                className={`flex-1 py-3 sm:py-2 rounded-lg text-xs font-medium transition-all ${direction === type
+                                    ? (type === 'Buy' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-rose-600 text-white shadow-lg')
+                                    : 'text-neutral-400 hover:text-white'
+                                    }`}
+                            >
+                                {type.toUpperCase()}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <div className="w-full sm:w-1/3">
+                    <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Spread</label>
+                    <input
+                        aria-label="Spread"
+                        type="number"
+                        inputMode="decimal"
+                        value={spread}
+                        onChange={(e) => setSpread(e.target.value)}
+                        step="0.1"
+                        placeholder="0"
+                        className="w-full mt-2 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-3 text-center text-white focus:border-indigo-500 outline-none transition-all font-mono font-bold"
+                    />
+                </div>
+            </div>
+
+            {/* Inputs */}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="flex-1 w-full">
+                    <label className="text-xs text-neutral-400 ml-1 mb-1 block">Open Price</label>
+                    <input
+                        aria-label="Open Price"
+                        type="number"
+                        inputMode="decimal"
+                        value={priceA}
+                        onChange={(e) => setPriceA(e.target.value)}
+                        placeholder={assetType === "Gold" ? "2350.00" : "1.0000"}
+                        className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-indigo-500 outline-none transition-all font-mono"
+                    />
+                </div>
+                <div className="pt-0 sm:pt-5 text-neutral-600 rotate-90 sm:rotate-0">
+                    <ArrowRight className="w-5 h-5" />
+                </div>
+                <div className="flex-1 w-full">
+                    <label className="text-xs text-neutral-400 ml-1 mb-1 block">Close Price</label>
+                    <input
+                        aria-label="Close Price"
+                        type="number"
+                        inputMode="decimal"
+                        value={priceB}
+                        onChange={(e) => setPriceB(e.target.value)}
+                        placeholder={assetType === "Gold" ? "2350.10" : "1.0050"}
+                        className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-indigo-500 outline-none transition-all font-mono"
+                    />
+                </div>
+            </div>
+
+            {/* Result Display */}
+            <div className="bg-[#1E2028] rounded-2xl border border-white/5 p-6 relative overflow-hidden">
+                {/* Background Glow */}
+                {result !== null && (
+                    <div className={`absolute inset-0 opacity-10 blur-3xl ${result >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                )}
+
+                {result !== null ? (
+                    <div className="space-y-6">
+                        {/* Pips Section */}
+                        <div className="flex flex-col items-center">
+                            <div className="flex items-center gap-3 relative z-10">
+                                {result >= 0 ? (
+                                    <ArrowUp className="w-6 h-6 text-emerald-500" />
+                                ) : (
+                                    <ArrowDown className="w-6 h-6 text-rose-500" />
+                                )}
+                                <span className={`text-4xl font-black tracking-tighter text-white`}>
+                                    {Math.abs(result)} <span className="text-lg font-medium text-neutral-500">Pips</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="h-px w-full bg-white/5" />
+
+                        {/* Profit Section */}
+                        <div className="flex flex-col items-center">
+                            <span className="text-[10px] uppercase tracking-widest text-neutral-400 mb-1">Estimated P/L</span>
+                            <div className={`text-3xl font-mono font-bold flex items-center ${estimatedProfit! >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {estimatedProfit! >= 0 ? '+' : '-'}${Math.abs(estimatedProfit!)}
+                            </div>
+                        </div>
+
+                    </div>
+                ) : (
+                    <div className="text-center py-8 text-neutral-600 text-sm font-medium">
+                        Enter prices to calculate range & profit
+                    </div>
+                )}
+            </div>
+
+        </div>
+    );
+
 
     // Inline Mode
     if (isInline) {
@@ -98,127 +250,12 @@ export const PipCalculator: React.FC<PipCalcProps> = ({ isInline = false }) => {
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-white tracking-wide">Pip Calculator</h2>
-                                <p className="text-xs text-neutral-400 font-medium tracking-wider uppercase">Precision Profit Tool</p>
+                                <p className="text-xs text-neutral-400 font-medium tracking-wider uppercase">Precision Tool</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="p-6">
-                        {/* INPUTS */}
-                        <div className="space-y-6">
-                            {/* Same inputs as modal, just rendered directly */}
-                            <div className="flex bg-[#1E2028] p-1 rounded-xl">
-                                {ASSETS.map(a => (
-                                    <button
-                                        key={a}
-                                        onClick={() => setAssetType(a)}
-                                        className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${assetType === a ? 'bg-indigo-600 text-white shadow-lg' : 'text-neutral-400 hover:text-white'}`}
-                                    >
-                                        {a}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Use existing inputs logic */}
-                            {/* Note: I am duplicating the input JSX here because refactoring to a sub-component is too risky/complex for a single replace call without seeing full file content again to ensure I don't break hydration. Ideally I would duplicate the JSX block from line 133 to 226 approx.
-                             Since I can't easily copy-paste "existing logic" without writing it out, I will write out the inputs here based on what I saw in previous turns.
-                             
-                             Wait, code duplication is bad.
-                             Better Approach:
-                             Wrap the "Inputs + Result" part in a separate component?
-                             Or just copy it. It's safe.
-                             */}
-                            <div className="flex items-center gap-4">
-                                <div className="w-full sm:w-1/3">
-                                    <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Lots</label>
-                                    <input
-                                        aria-label="Lot Size"
-                                        type="number"
-                                        inputMode="decimal"
-                                        value={lotSize}
-                                        onChange={(e) => setLotSize(e.target.value)}
-                                        step="0.01"
-                                        placeholder="1.0"
-                                        className="w-full mt-2 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-3 text-center text-white focus:border-indigo-500 outline-none transition-all font-mono font-bold"
-                                    />
-                                </div>
-
-                                <div className="w-full sm:w-1/3">
-                                    <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Bias</label>
-                                    <div className="flex mt-2 bg-[#1E2028] rounded-xl overflow-hidden h-[50px]">
-                                        <button
-                                            onClick={() => setDirection('Buy')}
-                                            className={`flex-1 text-xs font-bold transition-all ${direction === 'Buy' ? 'bg-emerald-500/20 text-emerald-400' : 'text-neutral-500 hover:text-white'}`}
-                                        >
-                                            BUY
-                                        </button>
-                                        <button
-                                            onClick={() => setDirection('Sell')}
-                                            className={`flex-1 text-xs font-bold transition-all border-l border-white/5 ${direction === 'Sell' ? 'bg-rose-500/20 text-rose-400' : 'text-neutral-500 hover:text-white'}`}
-                                        >
-                                            SELL
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="w-full sm:w-1/3">
-                                    <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Spread</label>
-                                    <input
-                                        aria-label="Spread"
-                                        type="number"
-                                        inputMode="decimal"
-                                        value={spread}
-                                        onChange={(e) => setSpread(e.target.value)}
-                                        step="0.1"
-                                        placeholder="0"
-                                        className="w-full mt-2 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-3 text-center text-white focus:border-indigo-500 outline-none transition-all font-mono font-bold"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex gap-4">
-                                <div className="flex-1 w-full">
-                                    <label className="text-xs text-neutral-400 ml-1 mb-1 block">Open Price</label>
-                                    <input
-                                        aria-label="Open Price"
-                                        type="number"
-                                        inputMode="decimal"
-                                        value={priceA}
-                                        onChange={(e) => setPriceA(e.target.value)}
-                                        placeholder={assetType === "Gold" ? "2350.00" : "1.0000"}
-                                        className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-indigo-500 outline-none transition-all font-mono"
-                                    />
-                                </div>
-                                <div className="flex-1 w-full">
-                                    <label className="text-xs text-neutral-400 ml-1 mb-1 block">Close Price</label>
-                                    <input
-                                        aria-label="Close Price"
-                                        type="number"
-                                        inputMode="decimal"
-                                        value={priceB}
-                                        onChange={(e) => setPriceB(e.target.value)}
-                                        placeholder={assetType === "Gold" ? "2350.10" : "1.0050"}
-                                        className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-indigo-500 outline-none transition-all font-mono"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* RESULTS */}
-                        <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                            <div className="mb-2 text-xs font-bold text-neutral-500 uppercase tracking-widest">Net Profit</div>
-                            <div className={`text-4xl font-black tracking-tight ${estimatedProfit && estimatedProfit >= 0 ? 'text-emerald-400' :
-                                estimatedProfit && estimatedProfit < 0 ? 'text-rose-400' : 'text-neutral-600'
-                                }`}>
-                                {estimatedProfit !== null ? `$${estimatedProfit.toFixed(2)}` : "$0.00"}
-                            </div>
-
-                            <div className="mt-2 text-sm font-mono text-neutral-400">
-                                {result ? `${result > 0 ? '+' : ''}${result.toFixed(1)} Pips` : "0.0 Pips"}
-                            </div>
-                        </div>
-
-                    </div>
+                    {renderContent()}
                 </div>
             </div>
         )
@@ -267,155 +304,7 @@ export const PipCalculator: React.FC<PipCalcProps> = ({ isInline = false }) => {
                             </div>
 
                             {/* Content */}
-                            <div className="p-6 space-y-6">
-
-                                {/* Top Row: Asset & Lot Size */}
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <div className="flex-1">
-                                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Asset</label>
-                                        <div className="flex bg-[#1E2028] p-1 rounded-xl mt-2 border border-white/5">
-                                            {(["Standard", "Gold"] as AssetType[]).map((type) => (
-                                                <button
-                                                    key={type}
-                                                    onClick={() => setAssetType(type)}
-                                                    className={`flex-1 py-3 sm:py-2 rounded-lg text-xs font-medium transition-all ${assetType === type
-                                                        ? 'bg-indigo-600 text-white shadow-lg'
-                                                        : 'text-neutral-400 hover:text-white'
-                                                        }`}
-                                                >
-                                                    {type}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="w-full sm:w-1/3">
-                                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Lots</label>
-                                        <input
-                                            aria-label="Lot Size"
-                                            type="number"
-                                            inputMode="decimal"
-                                            value={lotSize}
-                                            onChange={(e) => setLotSize(e.target.value)}
-                                            step="0.01"
-                                            placeholder="1.0"
-                                            className="w-full mt-2 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-3 text-center text-white focus:border-indigo-500 outline-none transition-all font-mono font-bold"
-                                        />
-                                    </div>
-                                </div>
-
-                                <p className="text-[10px] text-neutral-500 ml-1">
-                                    {assetType === "Standard" && "4 Decimal Pairs (e.g. EURUSD). $10/pip for 1.0 Lot."}
-                                    {assetType === "Gold" && "XAUUSD. $1 Move = 10 Pips = $100 Profit (1.0 Lot)."}
-                                </p>
-
-                                {/* Direction & Spread */}
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <div className="flex-1">
-                                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Direction</label>
-                                        <div className="flex bg-[#1E2028] p-1 rounded-xl mt-2 border border-white/5">
-                                            {(["Buy", "Sell"] as Direction[]).map((type) => (
-                                                <button
-                                                    key={type}
-                                                    onClick={() => setDirection(type)}
-                                                    className={`flex-1 py-3 sm:py-2 rounded-lg text-xs font-medium transition-all ${direction === type
-                                                        ? (type === 'Buy' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-rose-600 text-white shadow-lg')
-                                                        : 'text-neutral-400 hover:text-white'
-                                                        }`}
-                                                >
-                                                    {type.toUpperCase()}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="w-full sm:w-1/3">
-                                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Spread</label>
-                                        <input
-                                            aria-label="Spread"
-                                            type="number"
-                                            inputMode="decimal"
-                                            value={spread}
-                                            onChange={(e) => setSpread(e.target.value)}
-                                            step="0.1"
-                                            placeholder="0"
-                                            className="w-full mt-2 bg-[#1E2028] border border-white/10 rounded-xl py-3 px-3 text-center text-white focus:border-indigo-500 outline-none transition-all font-mono font-bold"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Inputs */}
-                                <div className="flex flex-col sm:flex-row items-center gap-3">
-                                    <div className="flex-1 w-full">
-                                        <label className="text-xs text-neutral-400 ml-1 mb-1 block">Open Price</label>
-                                        <input
-                                            aria-label="Open Price"
-                                            type="number"
-                                            inputMode="decimal"
-                                            value={priceA}
-                                            onChange={(e) => setPriceA(e.target.value)}
-                                            placeholder={assetType === "Gold" ? "2350.00" : "1.0000"}
-                                            className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-indigo-500 outline-none transition-all font-mono"
-                                        />
-                                    </div>
-                                    <div className="pt-0 sm:pt-5 text-neutral-600 rotate-90 sm:rotate-0">
-                                        <ArrowRight className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1 w-full">
-                                        <label className="text-xs text-neutral-400 ml-1 mb-1 block">Close Price</label>
-                                        <input
-                                            aria-label="Close Price"
-                                            type="number"
-                                            inputMode="decimal"
-                                            value={priceB}
-                                            onChange={(e) => setPriceB(e.target.value)}
-                                            placeholder={assetType === "Gold" ? "2350.10" : "1.0050"}
-                                            className="w-full bg-[#1E2028] border border-white/10 rounded-xl py-3 px-4 text-white focus:border-indigo-500 outline-none transition-all font-mono"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Result Display */}
-                                <div className="bg-[#1E2028] rounded-2xl border border-white/5 p-6 relative overflow-hidden">
-                                    {/* Background Glow */}
-                                    {result !== null && (
-                                        <div className={`absolute inset-0 opacity-10 blur-3xl ${result >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                                    )}
-
-                                    {result !== null ? (
-                                        <div className="space-y-6">
-                                            {/* Pips Section */}
-                                            <div className="flex flex-col items-center">
-                                                <div className="flex items-center gap-3 relative z-10">
-                                                    {result >= 0 ? (
-                                                        <ArrowUp className="w-6 h-6 text-emerald-500" />
-                                                    ) : (
-                                                        <ArrowDown className="w-6 h-6 text-rose-500" />
-                                                    )}
-                                                    <span className={`text-4xl font-black tracking-tighter text-white`}>
-                                                        {Math.abs(result)} <span className="text-lg font-medium text-neutral-500">Pips</span>
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Divider */}
-                                            <div className="h-px w-full bg-white/5" />
-
-                                            {/* Profit Section */}
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-[10px] uppercase tracking-widest text-neutral-400 mb-1">Estimated P/L</span>
-                                                <div className={`text-3xl font-mono font-bold flex items-center ${estimatedProfit! >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {estimatedProfit! >= 0 ? '+' : '-'}${Math.abs(estimatedProfit!)}
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-8 text-neutral-600 text-sm font-medium">
-                                            Enter prices to calculate range & profit
-                                        </div>
-                                    )}
-                                </div>
-
-                            </div>
+                            {renderContent()}
                         </motion.div>
                     </div>
                 )}

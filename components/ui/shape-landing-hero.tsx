@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Circle, Crown, BadgeCheck, ArrowRight, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -231,20 +230,6 @@ export function HeroGeometric() {
                             Start Your Journey
                             <ArrowRight className="w-4 h-4" />
                         </a>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <Link
-                                to="/tools/risk-calculator"
-                                className="h-12 px-6 rounded-full border border-white/10 bg-white/5 text-white text-sm font-medium hover:bg-white/10 transition-all w-full sm:w-auto flex items-center justify-center"
-                            >
-                                Risk Calc
-                            </Link>
-                            <Link
-                                to="/tools/pip-calculator"
-                                className="h-12 px-6 rounded-full border border-white/10 bg-white/5 text-white text-sm font-medium hover:bg-white/10 transition-all w-full sm:w-auto flex items-center justify-center"
-                            >
-                                Pip Ruler
-                            </Link>
-                        </div>
                     </div>
                 </motion.div>
             </div>
