@@ -32,7 +32,7 @@ export const SocialConnect = () => {
           <div className="flex flex-wrap justify-center gap-8 md:gap-12 items-center">
 
             {/* WhatsApp - Highlighted */}
-            <a href="https://wa.me/918446394909?text=Hey,%20I%20want%20to%20learn%20Forex%20trading." target="_blank" rel="noopener noreferrer" className="social-icon whatsapp group">
+            <a href="https://chat.whatsapp.com/LFzFie1XbED5EI0UcziSBV?mode=gi_t" target="_blank" rel="noopener noreferrer" className="social-icon whatsapp group">
               <div className="absolute inset-0 bg-green-500/20 rounded-full blur-xl animate-pulse"></div>
               <div className="icon-container scale-110 border-green-500/50 group-hover:scale-125 duration-300" style={{ boxShadow: '0 0 30px rgba(37, 211, 102, 0.3)' }}>
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg">
