@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 // Replace this with the actual published Google Sheet CSV URL
-const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-PLACEHOLDER/pub?gid=0&single=true&output=csv';
+const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR1X9J-GxHZyIf2hE55vwlbi8-hjnzGvnyrbT154EYu0J2Txd3FQAPj-3h304HOO2wLY5NSNVe7QZDQ/pub?gid=0&single=true&output=csv';
 // Fallback link if the sheet fails to load
 const FALLBACK_LINK = 'https://chat.whatsapp.com/LFzFie1XbED5EI0UcziSBV?mode=gi_t';
 
@@ -15,16 +15,25 @@ export const RedirectPage = () => {
             try {
                 // In a real scenario, we'll fetch the CSV here.
                 // For now, we simulate a small delay to show the animation, then use the fallback.
-                // const response = await fetch(GOOGLE_SHEET_CSV_URL);
-                // const csvText = await response.text();
-                // const link = csvText.split('\n')[0].split(',')[0].trim(); // Get first cell
+                let finalLink = FALLBACK_LINK;
                 
-                await new Promise(resolve => setTimeout(resolve, 400)); // Simulate network request
+                // Only try to fetch if we have a real Google Sheet URL
+                if (GOOGLE_SHEET_CSV_URL && GOOGLE_SHEET_CSV_URL.includes("docs.google.com") && !GOOGLE_SHEET_CSV_URL.includes("PLACEHOLDER")) {
+                    const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                    if (response.ok) {
+                        const csvText = await response.text();
+                        const extractedLink = csvText.split('\n')[0].split(',')[0].trim();
+                        // Verify it looks like a valid URL
+                        if (extractedLink && extractedLink.startsWith('http')) {
+                            finalLink = extractedLink;
+                        }
+                    }
+                } else {
+                    // If no valid URL, just wait a brief moment for the animation
+                    await new Promise(resolve => setTimeout(resolve, 400)); 
+                }
                 
-                // If we had a real sheet, we'd use `link` here.
-                const finalLink = FALLBACK_LINK; 
                 setRedirectUrl(finalLink);
-                
                 // Automatically redirect
                 window.location.href = finalLink;
             } catch (err) {
